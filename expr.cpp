@@ -2,6 +2,50 @@
 // Created by Johannes Joujo on 2024-02-04.
 //
 #include "expr.h"
+
+multi* multiParser(it first, it last,lexer lexer){
+    auto  word = paserWord(first,last,lexer);
+
+    if(!word){
+        return nullptr;
+    }
+    auto token = lexer.lex(first,last);
+
+    if(token == lexer::MULT_OP){
+        multi* value = new multi;
+        value->add(word);
+        return value;
+    }
+
+    return nullptr;
+}
+counter* count(it first, it last,lexer lexer){
+    auto myWord = paserWord(first,last,lexer);
+    if(!myWord){
+        return nullptr;
+    }
+
+    auto value = lexer.lex(first,last);
+    if(value == lexer::OPEN_BRES){
+        ++first;
+
+        value = lexer.lex(first,last);
+        if(value == lexer::DIGIT){
+            int x = *first - '0';
+            counter* counter1 = new counter(x);
+
+            value = lexer.lex(++first,last);
+            if(value == lexer::CLOSEING_BRES){
+                counter1->add(myWord);
+                return counter1;
+            }
+        }
+
+    }
+
+    return nullptr;
+}
+
 or_op* orOp(it first, it last,lexer lexer){
     auto lhs = paserWord(first,last,lexer);
     if(lhs){
@@ -27,10 +71,14 @@ or_op* orOp(it first, it last,lexer lexer){
 }
 
 char_op* charOp(it first, it last,lexer lexer){
-
     auto  value = lexer.lex(first,last);
+
     if(value == lexer::END){
         return nullptr;
+    }
+
+    if(value==lexer::DOT){
+        return new any_op(*first);
     }
 
     if(value == lexer::LETTER || value == lexer::DIGIT || value == lexer::SPACE){
@@ -47,14 +95,22 @@ word* paserWord(it& first, it last,lexer lexer){
         word* results = new word;
         results->add(ch);
         ++first;
-        results->add(paserWord(first, last,lexer)); // recursive call
+        results->add(paserWord(first, last,lexer));
         return results;
-
     }
     return nullptr;
 }
 group_op* parse_group(it& first, it last,lexer lexer){
     auto value = lexer.lex(first, last);
+    bool space = false;
+    while (value == lexer::SPACE){
+        ++first;
+        value = lexer.lex(first, last);
+        space = true;
+    }
+    if(space)
+        value = lexer.lex(++first, last);
+
     if(value == lexer::LEFT_PAREN){
         ++first;
         auto text_node = paserWord(first, last,lexer);
@@ -77,14 +133,14 @@ group_op* parse_group(it& first, it last,lexer lexer){
         return group_node;
     }
 
-    // continue with { digit }
+    //--first;
     return nullptr;
 }
 
 expr_op* parse_expr(it& first, it last,lexer lexer){
 
     auto group_op = parse_group(first, last,lexer);
-    if(group_op){   // checking if the expression starts with (
+    if(group_op){
         auto expr_node = new expr_op;
         expr_node->add(group_op);
         expr_node->add(parse_expr(first, last,lexer));
@@ -98,21 +154,31 @@ expr_op* parse_expr(it& first, it last,lexer lexer){
         return expr_node;
     }
 
+    auto counting = count(first,last,lexer);
+    if(counting){
+        auto expr_node = new expr_op;
+        expr_node->add(counting);
+        return expr_node;
+    }
+
+    auto multiSymbol = multiParser(first,last,lexer);
+    if(multiSymbol){
+        auto expr_node = new expr_op;
+        expr_node->add(multiSymbol);
+        return expr_node;
+    }
+
     auto text_node = paserWord(first, last, lexer);
     if(text_node){
         auto expr_node = new expr_op;
         expr_node->add(text_node);
-        expr_node->add(parse_expr(first, last,lexer)); // here we have a problem infinity loop
+        expr_node->add(parse_expr(first, last,lexer));
         return expr_node;
     }
-
-
 
     return nullptr;
 }
 
-
-//repetition
 match_op* match(it first, it last, lexer lexer){
     auto  expr_node = parse_expr(first,last,lexer);
     if(expr_node){

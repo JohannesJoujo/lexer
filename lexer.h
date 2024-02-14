@@ -38,10 +38,6 @@ private:
     char current_lexeme;
 public:
     void setCurrentLexeme(char currentLexeme);
-
-private:
-    size_t index = 0;
-
 };
 
 
