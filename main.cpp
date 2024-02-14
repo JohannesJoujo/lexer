@@ -17,7 +17,7 @@
 
 int main() {
 
-    std::string program = ".*";
+    std::string program = "Io*";
     std::string input = "Waterloooo Io was defeated, you won the war Waterloo promise to"
                         " love you for ever more Waterloo couldn't escape if I wanted"
                         " to Waterloo knowing was my fate is I to be with you Waterloo finally"

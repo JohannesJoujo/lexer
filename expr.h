@@ -61,7 +61,7 @@ struct word : op{
 
         if(n<1){
             n++;
-            //std::cout<<ord<<'\n'; // Måste fixa den hära delen -------------------------------------------------
+            std::cout<<ord<<'\n'; // Måste fixa den hära delen -------------------------------------------------
         }
         return result;
     }
@@ -127,7 +127,6 @@ struct multi: op{   //nästan klar
         static int h = 0; // using static in order to preserve our current value when call back
         static std::string ord;
         auto result = children[0]->eval(first, last,ptr);
-        auto value=children[0]->children;
 
         if(first == last){
             return false;
@@ -137,8 +136,9 @@ struct multi: op{   //nästan klar
             eval(++first, last,ptr);
         }
 
+        auto value=children[0]->children;
         //last = ptr +(N +1); // uppdate the last pointer
-        while (first != ptr){
+        while (first != ptr && first!=last){
             ord+=*first;
             first++;
         }
@@ -167,6 +167,7 @@ struct multi: op{   //nästan klar
             }
             if(h<1){
                 std::cout<<ord<<'\n';
+                return true;
             }
             //std::cout<<ord<<'\n';
         }

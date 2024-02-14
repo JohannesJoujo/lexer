@@ -113,7 +113,7 @@ group_op* parse_group(it& first, it last,lexer lexer){
 
     if(value == lexer::LEFT_PAREN){
         ++first;
-        auto text_node = paserWord(first, last,lexer);
+        auto text_node = parse_group(first, last,lexer);
         if(!text_node)
             return nullptr;
 
