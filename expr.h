@@ -61,7 +61,7 @@ struct word : op{
 
         if(n<1){
             n++;
-            std::cout<<ord<<'\n'; // Måste fixa den hära delen -------------------------------------------------
+            //std::cout<<ord<<'\n'; // Måste fixa den hära delen -------------------------------------------------
         }
         return result;
     }
@@ -73,6 +73,8 @@ struct counter: op{
 
     bool eval(it first, it last,it& ptr) override{
         static int n = 0; // using static in order to preserve our current value when call back
+        static it s= ptr-4;
+        static std::string ord;
         auto result = children[0]->eval(first, last,ptr);
         if(first == last){
             return false;
@@ -81,14 +83,34 @@ struct counter: op{
             eval(++first, last,ptr);
         }
 
-        last = ptr +(N +1); // uppdate the last pointer
-        if(n < 1){
+        ord+=*first;
+        last = ptr +(N+1); // uppdate the last pointer
+        //std::cout<<*last;
+        if(n < 1 && *s=='.'){
             n++;
             while (first != last){
-                std::cout<<*first;
+                ord+=*first;
                 first++;
             }
+            std::cout<<ord;
+
+        }else if(n < 1){
+            first=ptr;
+
+            n++;
+            while (first != last){
+                if(*first==*ptr) {
+                    ord+=*ptr;
+                    std::cout << *ptr<<'\n';
+                    ++first;
+                }else{
+                    return false;
+                }
+            }
+            std::cout<<ord;
+
         }
+
         return result;
     }
 };
@@ -118,25 +140,30 @@ struct expr_op:op{ //klar
     }
 };
 
-
 struct multi: op{   //nästan klar
     int counter=0;
     bool eval(it first, it last,it& ptr) override{
         static int n = 0; // using static in order to preserve our current value when call back
         static int j = 0; // using static in order to preserve our current value when call back
         static int h = 0; // using static in order to preserve our current value when call back
+        static int g = 0; // using static in order to preserve our current value when call back
         static std::string ord;
-        auto result = children[0]->eval(first, last,ptr);
+
 
         if(first == last){
             return false;
         }
+        ptr=ptr-1;
+        if(*--ptr=='.'){
+            g=1;
+        }
+        auto result = children[0]->eval(first, last,ptr);
+        auto value=children[0]->children;
 
         if(!result){
             eval(++first, last,ptr);
         }
 
-        auto value=children[0]->children;
         //last = ptr +(N +1); // uppdate the last pointer
         while (first != ptr && first!=last){
             ord+=*first;
@@ -144,7 +171,8 @@ struct multi: op{   //nästan klar
         }
         if(j<1) {
             ++j;
-            if (value[value.size() == '.']) {
+            //if (value[value.size() == '.'] ) {
+            if (g==1) {
                 while (first != last) {
                     ord += *first;
                     first++;
@@ -171,7 +199,6 @@ struct multi: op{   //nästan klar
             }
             //std::cout<<ord<<'\n';
         }
-
         return result;
     }
 };

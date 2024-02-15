@@ -17,18 +17,18 @@
 
 int main() {
 
-    std::string program = "Io*";
+    std::string program = ".";
     std::string input = "Waterloooo Io was defeated, you won the war Waterloo promise to"
                         " love you for ever more Waterloo couldn't escape if I wanted"
                         " to Waterloo knowing was my fate is I to be with you Waterloo finally"
-                        " facing my Waterloo ";
+                        " facing my Waterlooi ";
 
     lexer lexer(program.begin(),program.end());
     auto tree = match(program.begin(),program.end(),lexer);
 
     it first = input.begin();
     it last = input.end();
-    it ptr  = first;
+    it ptr  = program.end();
 
     if(tree){
         auto match = tree->eval(first,last,ptr);
