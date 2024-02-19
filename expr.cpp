@@ -46,6 +46,25 @@ counter* count(it first, it last,lexer lexer){
     return nullptr;
 }
 
+/*
+any_op* any_char(it first, it last,lexer lexer){
+    auto lhs=paserWord(first,last,lexer);
+    if(lhs){
+        std::string counter;
+        auto value =lexer.lex(first,last);
+        if(value==lexer::OPEN_BRES){
+            while (value==lexer::DIGIT){
+                counter+=*first;
+                first++;
+                value =lexer.lex(first,last);
+            }
+        }
+        std::cout<<"vem är som dig säg till mig!!!\n";
+    }
+
+}*/
+
+
 or_op* orOp(it first, it last,lexer lexer){
     auto lhs = paserWord(first,last,lexer);
     if(lhs){
@@ -113,7 +132,7 @@ group_op* parse_group(it& first, it last,lexer lexer){
 
     if(value == lexer::LEFT_PAREN){
         ++first;
-        auto text_node = parse_group(first, last,lexer);
+        auto text_node = parse_expr(first, last,lexer);
         if(!text_node)
             return nullptr;
 
@@ -154,17 +173,25 @@ expr_op* parse_expr(it& first, it last,lexer lexer){
         return expr_node;
     }
 
-    auto counting = count(first,last,lexer);
-    if(counting){
-        auto expr_node = new expr_op;
-        expr_node->add(counting);
-        return expr_node;
-    }
-
     auto multiSymbol = multiParser(first,last,lexer);
     if(multiSymbol){
         auto expr_node = new expr_op;
         expr_node->add(multiSymbol);
+        return expr_node;
+    }
+/*
+    auto dot_op=any_char(first, last, lexer);
+    if(dot_op){
+        std::cout<<"den känner igen dot mannen!!!\n";
+        auto expr_node = new expr_op;
+        expr_node->add(dot_op);
+        return expr_node;
+    }
+*/
+    auto counting = count(first,last,lexer);
+    if(counting){
+        auto expr_node = new expr_op;
+        expr_node->add(counting);
         return expr_node;
     }
 

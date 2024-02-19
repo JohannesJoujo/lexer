@@ -5,6 +5,7 @@
 #ifndef LEXER_EXPR_H
 #define LEXER_EXPR_H
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include "lexer.h"
 struct op{
@@ -14,15 +15,27 @@ struct op{
             children.push_back(child);
     }
     std::vector<op*> children;
+
+    virtual std::string id()=0;
+    void print(int indent=0){
+        std::cout<<std::setw(indent)<<""<<id()<<'\n';
+        for(auto child: children){
+            child->print(indent+4);
+        }
+    }
 };
 struct char_op:op{
     char ch;
     char_op(char c):ch(c){ }
 
+    std::string id() override{
+        return "char_op";
+    }
     bool eval(it first, it last,it& ptr) override{
 
         if(*first == ch){
             return true;
+
         } else{
             return false;
         }
@@ -32,7 +45,9 @@ struct char_op:op{
 struct any_op : char_op{ //potentiellt klar med den
 
     any_op(char c) : char_op(c) {} // Constructor accepting a char argument
-
+    std::string id() override{
+        return "any_op";
+    }
     bool eval(it first, it last,it& ptr) override{
         if(first == last){
             return false;
@@ -42,6 +57,9 @@ struct any_op : char_op{ //potentiellt klar med den
 };
 
 struct word : op{
+    std::string id() override{
+        return "word";
+    }
     bool eval(it first, it last,it& ptr) override{
         static int n = 0; // using static in order to preserve our current value when call back
         static std::string ord;
@@ -70,7 +88,9 @@ struct word : op{
 struct counter: op{
     int N = 0;
     counter(int c):N(c){}
-
+    std::string id() override{
+        return "counter";
+    }
     bool eval(it first, it last,it& ptr) override{
         static int n = 0; // using static in order to preserve our current value when call back
         static it s= ptr-4;
@@ -83,11 +103,13 @@ struct counter: op{
             eval(++first, last,ptr);
         }
 
-        ord+=*first;
-        last = ptr +(N+1); // uppdate the last pointer
+
+        last = ptr +(N); // uppdate the last pointer
         //std::cout<<*last;
         if(n < 1 && *s=='.'){
             n++;
+            ord+=*first;
+            first=first++;
             while (first != last){
                 ord+=*first;
                 first++;
@@ -95,16 +117,22 @@ struct counter: op{
             std::cout<<ord;
 
         }else if(n < 1){
-            first=ptr;
-
             n++;
+            while(first!=ptr) {
+                ord += *first;
+                first++;
+            }
+            //first=ptr;
             while (first != last){
                 if(*first==*ptr) {
                     ord+=*ptr;
                     std::cout << *ptr<<'\n';
                     ++first;
                 }else{
-                    return false;
+                    std::cout<<"problemo\n";
+                    ord="";
+                    eval(++first, last,ptr);
+                    //return false;
                 }
             }
             std::cout<<ord;
@@ -116,18 +144,21 @@ struct counter: op{
 };
 
 struct group_op:op{ // wrong implementation
+    std::string id() override{
+        return "group_op";
+    }
     bool eval(it first, it last,it& ptr) override{
         if(first == last)
             return false;
         auto result = children[0]->eval(first, last,ptr);
-        if(result){
-            return true;
-        }
-        return false;
+        return result;
     }
 };
 
 struct expr_op:op{ //klar
+    std::string id() override{
+        return "expr_op";
+    }
     bool eval(it first, it last,it& ptr) override{
         if(first == last)
             return false;
@@ -141,69 +172,30 @@ struct expr_op:op{ //klar
 };
 
 struct multi: op{   //nästan klar
-    int counter=0;
+    std::string id() override{
+        return "multi";
+    }
     bool eval(it first, it last,it& ptr) override{
-        static int n = 0; // using static in order to preserve our current value when call back
-        static int j = 0; // using static in order to preserve our current value when call back
-        static int h = 0; // using static in order to preserve our current value when call back
-        static int g = 0; // using static in order to preserve our current value when call back
-        static std::string ord;
-
-
-        if(first == last){
+        if(first==last){
             return false;
         }
-        ptr=ptr-1;
-        if(*--ptr=='.'){
-            g=1;
-        }
         auto result = children[0]->eval(first, last,ptr);
-        auto value=children[0]->children;
-
         if(!result){
-            eval(++first, last,ptr);
+            first++;
+            children[0]->eval(first,last,ptr);
         }
-
-        //last = ptr +(N +1); // uppdate the last pointer
-        while (first != ptr && first!=last){
-            ord+=*first;
+        while(first!=last ){
+            eval(first,last,ptr);
+            std::cout<<*first;
             first++;
         }
-        if(j<1) {
-            ++j;
-            //if (value[value.size() == '.'] ) {
-            if (g==1) {
-                while (first != last) {
-                    ord += *first;
-                    first++;
-                }
-                h++;
-                std::cout << ord << '\n';
-            }
-            //return true;
-        }
-        //first = ptr;
-        if(n<1){
-            n++;
-            while (first != last){
-                if(*first == *ptr){
-                    ord+=*first;
-                    first++;
-                }else{
-                    break;
-                }
-            }
-            if(h<1){
-                std::cout<<ord<<'\n';
-                return true;
-            }
-            //std::cout<<ord<<'\n';
-        }
-        return result;
     }
 };
 
 struct or_op:op{    //klar
+    std::string id() override{
+        return "or_op";
+    }
     bool eval(it first, it last,it& ptr) override{
         auto result = children[0]->eval(first, last,ptr);
 
@@ -216,6 +208,9 @@ struct or_op:op{    //klar
 };
 
 struct match_op:op{
+    std::string id() override{
+        return "match_op";
+    }
     bool eval(it first, it last,it& ptr) override{
         if(first == last)
             return false;
@@ -231,7 +226,7 @@ struct match_op:op{
 match_op* match(it first, it last, lexer lexer);
 or_op* orOp(it first, it last,lexer lexer);
 word* paserWord(it& first, it last,lexer lexer);
-
+expr_op* parse_expr(it& first, it last,lexer lexer);
 
 
 
