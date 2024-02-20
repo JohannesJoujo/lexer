@@ -8,8 +8,8 @@
 #include <iomanip>
 #include <vector>
 #include "lexer.h"
-struct op{
-    virtual bool eval(it first, it last, it& ptr) = 0;
+struct op{ //klar
+    virtual bool eval(it& first, it last) = 0;
     void add(op* child){
         if(child)
             children.push_back(child);
@@ -17,217 +17,172 @@ struct op{
     std::vector<op*> children;
 
     virtual std::string id()=0;
-    void print(int indent=0){
-        std::cout<<std::setw(indent)<<""<<id()<<'\n';
-        for(auto child: children){
-            child->print(indent+4);
+    void print(int indent=0) {
+        std::cout << std::setw(indent) << " " << id() << "\n";
+        for (auto child: children) {
+            child->print(indent + 4);
         }
     }
 };
-struct char_op:op{
-    char ch;
-    char_op(char c):ch(c){ }
-
-    std::string id() override{
-        return "char_op";
-    }
-    bool eval(it first, it last,it& ptr) override{
-
-        if(*first == ch){
-            return true;
-
-        } else{
-            return false;
+struct word : op{ // klar
+    bool eval(it& first, it last) override{
+        auto result = children[0]->eval(first, last);
+        if(children.size() > 1){
+            return result && children[1]->eval(first, last);
         }
+        return result;
     }
-};
-
-struct any_op : char_op{ //potentiellt klar med den
-
-    any_op(char c) : char_op(c) {} // Constructor accepting a char argument
-    std::string id() override{
-        return "any_op";
-    }
-    bool eval(it first, it last,it& ptr) override{
-        if(first == last){
-            return false;
-        }
-        return true;
-    }
-};
-
-struct word : op{
     std::string id() override{
         return "word";
     }
-    bool eval(it first, it last,it& ptr) override{
-        static int n = 0; // using static in order to preserve our current value when call back
-        static std::string ord;
 
-        auto result = children[0]->eval(first, last,ptr);
-
-        if(first != last){
-            ptr = first;
-        }
-        if(result){
-            ord+=*first;
-        }
-
-        if(children.size() > 1){
-            return result && children[1]->eval(++first, last,ptr);
-        }
-
-        if(n<1){
-            n++;
-            //std::cout<<ord<<'\n'; // Måste fixa den hära delen -------------------------------------------------
-        }
-        return result;
-    }
 };
+struct char_op:op{ //klar
+    char ch;
+    char_op(char c):ch(c){ }
+    bool eval(it& first, it last) override{
 
-struct counter: op{
-    int N = 0;
-    counter(int c):N(c){}
-    std::string id() override{
-        return "counter";
-    }
-    bool eval(it first, it last,it& ptr) override{
-        static int n = 0; // using static in order to preserve our current value when call back
-        static it s= ptr-4;
-        static std::string ord;
-        auto result = children[0]->eval(first, last,ptr);
-        if(first == last){
+        if(*first == ch || ch == '.'){
+            std::cout<<*first;
+            first++;
+            return true;
+        } else{
+            first++;
             return false;
         }
-        if(!result){
-            eval(++first, last,ptr);
-        }
 
+    }
+    std::string id() override{
+        std::cout<<"char_op => ";
+        std::cout<<ch;
+        return  " ";
+    }
 
-        last = ptr +(N); // uppdate the last pointer
-        //std::cout<<*last;
-        if(n < 1 && *s=='.'){
-            n++;
-            ord+=*first;
-            first=first++;
-            while (first != last){
-                ord+=*first;
-                first++;
-            }
-            std::cout<<ord;
-
-        }else if(n < 1){
-            n++;
-            while(first!=ptr) {
-                ord += *first;
-                first++;
-            }
-            //first=ptr;
-            while (first != last){
-                if(*first==*ptr) {
-                    ord+=*ptr;
-                    std::cout << *ptr<<'\n';
-                    ++first;
-                }else{
-                    std::cout<<"problemo\n";
-                    ord="";
-                    eval(++first, last,ptr);
-                    //return false;
-                }
-            }
-            std::cout<<ord;
-
-        }
-
-        return result;
+};
+struct anyChar :char_op{ //klar
+    anyChar(): char_op('.'){}
+    bool eval(it& first, it last) override{
+        std::cout<<*first;
+        return true;
+    }
+    std::string id() override{
+        return "anyChar";
     }
 };
+struct multi: op{   //klar
+    bool status = false;
+    bool eval(it& first, it last) override{
+        auto temp=first;
 
-struct group_op:op{ // wrong implementation
-    std::string id() override{
-        return "group_op";
-    }
-    bool eval(it first, it last,it& ptr) override{
-        if(first == last)
-            return false;
-        auto result = children[0]->eval(first, last,ptr);
-        return result;
-    }
-};
-
-struct expr_op:op{ //klar
-    std::string id() override{
-        return "expr_op";
-    }
-    bool eval(it first, it last,it& ptr) override{
-        if(first == last)
-            return false;
-        auto result = children[0]->eval(first, last,ptr);
-        if(result){
+        while ( children[0]->eval(first,last)){
+            if(first == last){ return true;}
+            status = true;
+        }
+        if(children.size()>1) {
+            while (!children[1]->eval(temp, last)) {} // works well
+        }
+        if(status){
             return true;
         }
-
         return false;
     }
-};
-
-struct multi: op{   //nästan klar
     std::string id() override{
         return "multi";
     }
-    bool eval(it first, it last,it& ptr) override{
-        if(first==last){
-            return false;
-        }
-        auto result = children[0]->eval(first, last,ptr);
-        if(!result){
-            first++;
-            children[0]->eval(first,last,ptr);
-        }
-        while(first!=last ){
-            eval(first,last,ptr);
-            std::cout<<*first;
-            first++;
-        }
-    }
+
 };
-
-struct or_op:op{    //klar
-    std::string id() override{
-        return "or_op";
-    }
-    bool eval(it first, it last,it& ptr) override{
-        auto result = children[0]->eval(first, last,ptr);
-
+struct expr_op:op{ //   klar
+    bool eval(it& first, it last) override{
+        if(first == last)
+            return false;
+        auto result = children[0]->eval(first, last);
         if(result){
             return true;
         }
-
-        return children[1]->eval(first, last,ptr);
+        return false;
+    }
+    std::string id() override{
+        return "expr_op";
     }
 };
+struct subexpr:op{ //klar
 
-struct match_op:op{
-    std::string id() override{
-        return "match_op";
+    bool eval(it& first, it last) override{
+        bool result=children[0]->eval(first,last);
+        if (result) return true;
+        return false;
     }
-    bool eval(it first, it last,it& ptr) override{
-        if(first == last)
-            return false;
-        auto result = children[0]->eval(first, last,ptr);
-        if(!result){
-            return eval(first + 1, last,ptr);
+    std::string id() override{
+        return "subexpr";
+    }
+
+};
+struct group_op:op{ // klar
+    bool eval(it& first, it last) override{
+        auto temp = first;
+        if(first == last) {return false;}
+
+        while(!children[0]->eval(first, last)){}
+        if(children.size()>1) {
+            while (!children[1]->eval(temp, last)) {}
         }
         return true;
     }
+    std::string id() override{
+        return "group_op";
+    }
+};
+struct counter: op{ //inte klar
+    int N = 0;
+    std::string myString;
+    bool result= false;
+    counter(int c):N(c){}
+    bool eval(it& first, it last) override {
+        auto temp_last = first + N;   // update the position of the last pointer
+        while (children[0]->eval(first, temp_last)){
+            result= true;
+            if (first == last) {break;}
+        }
+        return result;
+    }
+    std::string id() override{
+        return "counter";
+    }
+};
+struct or_op:op{
+    bool eval(it& first, it last) override{
+        auto temp=first;
+        auto result = children[0]->eval(first, last);
+        if(result){
+            return true;
+        }
+        return children[1]->eval(temp, last);
+    }
+    std::string id() override{
+        return "or_op";
+    }
+};
+struct match_op:op{
+    bool eval(it& first, it last) override{
+        if(first == last) {
+            return false;
+        }
+        auto result = children[0]->eval(first, last);
+        if(!result){
+            return eval(first, last);
+        }
+        return true;
+    }
+    std::string id() override{
+        return "match_op";
+    }
 };
 
-
+multi* multiParser(it& first, it last,lexer lexer);
+expr_op* parse_expr(it& first, it last,lexer lexer);
 match_op* match(it first, it last, lexer lexer);
 or_op* orOp(it first, it last,lexer lexer);
-word* paserWord(it& first, it last,lexer lexer);
-expr_op* parse_expr(it& first, it last,lexer lexer);
-
-
-
+word* pase_word(it& first, it last,lexer lexer);
+char_op* charOp(it first, it last,lexer lexer);
+counter* count(it& first, it last,lexer lexer);
 #endif //LEXER_EXPR_H

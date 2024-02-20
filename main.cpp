@@ -30,27 +30,22 @@
 
 int main() {
 
-    std::string program = "Io*";
-    std::string input = "Waterlooooooo Ioo was defeated, you won the war Waterloo promise to"
-                        " love you for ever more Waterloo couldn't escape if I wanted"
-                        " to Waterloo knowing was my fate is I to be with you Waterloo finally"
-                        " facing my Waterlooi ";
-
+    std::string program = "(heter*) knowin{3}";
+    std::string input = "jag heterr knowinrrrrr";
     lexer lexer(program.begin(),program.end());
     auto tree = match(program.begin(),program.end(),lexer);
-    tree->print();
     it first = input.begin();
     it last = input.end();
-    it ptr  = program.end();
-
     if(tree){
-        auto match = tree->eval(first,last,ptr);
+        auto match = tree->eval(first,last);
         if(match){
-            std::cout<<" :FOUND A MATCH";
+            std::cout<<" :FOUND A MATCH \n\n";
         } else{
-            std::cout<<"NO MATCH FOUND";
+            std::cout<<" :NO MATCH FOUND \n";
         }
     } else std::cout<<"Wrong input";
+
+    tree->print();
 
 
 
