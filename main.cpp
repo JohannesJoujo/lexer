@@ -2,36 +2,23 @@
 #include "lexer.h"
 #include "expr.h"
 
-/**
- * <program>:= <exp>
- * <expr>  := <group> | <or_op> |<multiple> | <word> | <counter> | <ignor> | <output>
- * <group> := [(<expr>)]
- * <or_op> := <word>+<word>
- * <word>  :=<char> [<word>] | <any_char> [<word>]
- * <multiple>:= <word>*
- * <dot> := '.'
- * <counter> := {<expr>}
- * <ignor> := '\I'
- * <output> := '<expr>\O{<int 0->9 >}'
- */
 
 /**
- * <program> -> <expr>
- * <expr> -> <match> [<expr>]
- * <match> ->  <or> | <group> | <word>
- * <word> -> <repeat> | <char> <word> | <char>
- * <repeat> -> <char> * | <char> <count>
- * <or> -> <word> + <word>
- * <group> -> (<match>)
- * <char> -> <any> | A-Z | a-z | 0-9
- * <any> -> .
- * <count> -> {0...9}
+ *  match    := expr
+    expr     := group | or_op  | word
+    group    := (expr)[<expr>]
+    word     := subexpr | char[word] | char
+    subexpr  := char* | char<counter>
+    char     := any_char | a --> z | A --> Z | 0->9
+    counter  := {digit} [<expr>]
+    any_char := .
+    or_op    := word + word
  */
 
 int main() {
 
-    std::string program = "(heter*) knowin{3}";
-    std::string input = "jag heterr knowinrrrrr";
+    std::string program = "b+aa*";
+    std::string input = "Haaab";
     lexer lexer(program.begin(),program.end());
     auto tree = match(program.begin(),program.end(),lexer);
     it first = input.begin();

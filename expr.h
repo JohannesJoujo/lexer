@@ -75,16 +75,13 @@ struct multi: op{   //klar
         auto temp=first;
 
         while ( children[0]->eval(first,last)){
-            if(first == last){ return true;}
             status = true;
+            if(first == last){ return true;}
         }
         if(children.size()>1) {
             while (!children[1]->eval(temp, last)) {} // works well
         }
-        if(status){
-            return true;
-        }
-        return false;
+        return status;
     }
     std::string id() override{
         return "multi";
@@ -120,12 +117,14 @@ struct subexpr:op{ //klar
 struct group_op:op{ // klar
     bool eval(it& first, it last) override{
         auto temp = first;
-        if(first == last) {return false;}
-
-        while(!children[0]->eval(first, last)){}
-        if(children.size()>1) {
-            while (!children[1]->eval(temp, last)) {}
+        if(first == last) {
+            return false;
         }
+        while (!children[0]->eval(first,last)){}
+        if(children.size() > 1)
+            while (!children[1]->eval(temp, last)){if(temp == last) {
+                    break;
+                }} // works well
         return true;
     }
     std::string id() override{
@@ -134,14 +133,14 @@ struct group_op:op{ // klar
 };
 struct counter: op{ //inte klar
     int N = 0;
-    std::string myString;
     bool result= false;
     counter(int c):N(c){}
     bool eval(it& first, it last) override {
         auto temp_last = first + N;   // update the position of the last pointer
+
         while (children[0]->eval(first, temp_last)){
             result= true;
-            if (first == last) {break;}
+            if (first == last) {return result;}
         }
         return result;
     }
@@ -177,6 +176,23 @@ struct match_op:op{
         return "match_op";
     }
 };
+struct output_op: op{
+    int N = 0;
+    output_op(int value):N(value){}
+    bool eval(it &first, it last) override{
+        /*if(children.size() > 0){
+            auto result = children[0]->eval(first,last);
+            return result;
+        }*/
+        for(auto barn:children){
+            barn->eval(first,last);
+        }
+        return false;
+    }
+    std::string id() override{
+        return "output_op";
+    }
+};
 
 multi* multiParser(it& first, it last,lexer lexer);
 expr_op* parse_expr(it& first, it last,lexer lexer);
@@ -185,4 +201,5 @@ or_op* orOp(it first, it last,lexer lexer);
 word* pase_word(it& first, it last,lexer lexer);
 char_op* charOp(it first, it last,lexer lexer);
 counter* count(it& first, it last,lexer lexer);
+output_op* outputOp(it& first, it last,lexer lexer,std::vector<group_op*> barn);
 #endif //LEXER_EXPR_H
